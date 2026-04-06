@@ -201,6 +201,7 @@ export async function discoverPools({
 export async function getTopCandidates({ limit = 10 } = {}) {
   const { config } = await import("../config.js");
   const { pools } = await discoverPools({ page_size: 50 });
+  const filteredOut = [];
 
   // Exclude pools where the wallet already has an open position
   const { getMyPositions } = await import("./dlmm.js");
@@ -210,13 +211,22 @@ export async function getTopCandidates({ limit = 10 } = {}) {
 
   const eligible = pools
     .filter((p) => {
-      if (occupiedPools.has(p.pool) || occupiedMints.has(p.base?.mint)) return false;
+      if (occupiedPools.has(p.pool)) {
+        pushFilteredReason(filteredOut, p, "already have an open position in this pool");
+        return false;
+      }
+      if (occupiedMints.has(p.base?.mint)) {
+        pushFilteredReason(filteredOut, p, "already holding this base token in another pool");
+        return false;
+      }
       if (isPoolOnCooldown(p.pool)) {
         log("screening", `Filtered cooldown pool ${p.name} (${p.pool.slice(0, 8)})`);
+        pushFilteredReason(filteredOut, p, "pool cooldown active");
         return false;
       }
       if (isBaseMintOnCooldown(p.base?.mint)) {
         log("screening", `Filtered cooldown token ${p.base?.symbol} (${p.base?.mint?.slice(0, 8)})`);
+        pushFilteredReason(filteredOut, p, "token cooldown active");
         return false;
       }
       return true;
@@ -227,6 +237,8 @@ export async function getTopCandidates({ limit = 10 } = {}) {
     await enrichPvpRisk(eligible);
     if (config.screening.blockPvpSymbols) {
       const before = eligible.length;
+      const pvpRemoved = eligible.filter((p) => p.is_pvp);
+      pvpRemoved.forEach((p) => pushFilteredReason(filteredOut, p, "PVP hard filter"));
       eligible.splice(0, eligible.length, ...eligible.filter((p) => !p.is_pvp));
       if (eligible.length < before) {
         log("screening", `PVP hard filter removed ${before - eligible.length} pool(s)`);
@@ -293,7 +305,11 @@ export async function getTopCandidates({ limit = 10 } = {}) {
     }
     // Wash trading hard filter — fake volume = misleading fee yield
     eligible.splice(0, eligible.length, ...eligible.filter((p) => {
-      if (p.is_wash) { log("screening", `Risk filter: dropped ${p.name} — wash trading flagged`); return false; }
+      if (p.is_wash) {
+        log("screening", `Risk filter: dropped ${p.name} — wash trading flagged`);
+        pushFilteredReason(filteredOut, p, "wash trading flagged");
+        return false;
+      }
       return true;
     }));
 
@@ -306,6 +322,7 @@ export async function getTopCandidates({ limit = 10 } = {}) {
         if (p.price_vs_ath_pct == null) return true; // no data → don't filter
         if (p.price_vs_ath_pct > threshold) {
           log("screening", `ATH filter: dropped ${p.name} — ${p.price_vs_ath_pct}% of ATH (limit: ${threshold}%)`);
+          pushFilteredReason(filteredOut, p, `${p.price_vs_ath_pct}% of ATH > ${threshold}% limit`);
           return false;
         }
         return true;
@@ -318,6 +335,7 @@ export async function getTopCandidates({ limit = 10 } = {}) {
     const filtered = eligible.filter((p) => {
       if (p.dev && isDevBlocked(p.dev)) {
         log("dev_blocklist", `Filtered blocked deployer (okx) ${p.dev.slice(0, 8)} token ${p.base?.symbol}`);
+        pushFilteredReason(filteredOut, p, "blocked deployer");
         return false;
       }
       return true;
@@ -329,6 +347,7 @@ export async function getTopCandidates({ limit = 10 } = {}) {
   return {
     candidates: eligible,
     total_screened: pools.length,
+    filtered_examples: filteredOut.slice(0, 3),
   };
 }
 
@@ -427,4 +446,12 @@ function round(n) {
 
 function fix(n, decimals) {
   return n != null ? Number(n.toFixed(decimals)) : null;
+}
+
+function pushFilteredReason(list, pool, reason) {
+  if (!list || !pool) return;
+  list.push({
+    name: pool.name || `${pool.base?.symbol || "?"}-${pool.quote?.symbol || "?"}`,
+    reason,
+  });
 }
