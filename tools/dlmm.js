@@ -64,6 +64,7 @@ function getWallet() {
 
 // ─── Pool Cache ────────────────────────────────────────────────
 const poolCache = new Map();
+const poolMetadataCache = new Map();
 
 async function getPool(poolAddress) {
   const key = poolAddress.toString();
@@ -76,6 +77,39 @@ async function getPool(poolAddress) {
 }
 
 setInterval(() => poolCache.clear(), 5 * 60 * 1000);
+setInterval(() => poolMetadataCache.clear(), 15 * 60 * 1000);
+
+async function getPoolMetadata(poolAddress) {
+  const key = String(poolAddress);
+  if (poolMetadataCache.has(key)) {
+    return poolMetadataCache.get(key);
+  }
+
+  try {
+    const res = await fetch(`https://dlmm.datapi.meteora.ag/pools/${key}`);
+    if (!res.ok) {
+      throw new Error(`Pool metadata API ${res.status}`);
+    }
+
+    const data = await res.json();
+    const tokenX = data?.token_x?.symbol || null;
+    const tokenY = data?.token_y?.symbol || null;
+    const pair = data?.name || (tokenX && tokenY ? `${tokenX}-${tokenY}` : null);
+    const meta = {
+      address: data?.address || key,
+      name: pair,
+      token_x_symbol: tokenX,
+      token_y_symbol: tokenY,
+    };
+    poolMetadataCache.set(key, meta);
+    return meta;
+  } catch (error) {
+    log("pool_meta_warn", `Pool metadata lookup failed for ${key.slice(0, 8)}: ${error.message}`);
+    const fallback = { address: key, name: null, token_x_symbol: null, token_y_symbol: null };
+    poolMetadataCache.set(key, fallback);
+    return fallback;
+  }
+}
 
 // ─── Get Active Bin ────────────────────────────────────────────
 export async function getActiveBin({ pool_address }) {
@@ -732,6 +766,7 @@ export async function closePosition({ position_address, reason }) {
     log("close", `Closing position: ${position_address}`);
     const wallet = getWallet();
     const poolAddress = await lookupPoolForPosition(position_address, wallet.publicKey.toString());
+    const poolMeta = await getPoolMetadata(poolAddress);
     // Clear cached pool so SDK loads fresh position fee state
     poolCache.delete(poolAddress.toString());
     const pool = await getPool(poolAddress);
@@ -902,7 +937,8 @@ export async function closePosition({ position_address, reason }) {
       await recordPerformance({
         position: position_address,
         pool: poolAddress,
-        pool_name: tracked.pool_name || poolAddress.slice(0, 8),
+        pool_name: tracked.pool_name || poolMeta.name || poolAddress.slice(0, 8),
+        base_mint: pool.lbPair.tokenXMint.toString(),
         strategy: tracked.strategy,
         bin_range: tracked.bin_range,
         bin_step: tracked.bin_step || null,
@@ -922,7 +958,7 @@ export async function closePosition({ position_address, reason }) {
         success: true,
         position: position_address,
         pool: poolAddress,
-        pool_name: tracked.pool_name || null,
+        pool_name: tracked.pool_name || poolMeta.name || null,
         claim_txs: claimTxHashes,
         close_txs: closeTxHashes,
         txs: txHashes,
@@ -936,7 +972,7 @@ export async function closePosition({ position_address, reason }) {
       success: true,
       position: position_address,
       pool: poolAddress,
-      pool_name: null,
+      pool_name: poolMeta.name || null,
       claim_txs: claimTxHashes,
       close_txs: closeTxHashes,
       txs: txHashes,

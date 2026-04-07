@@ -114,7 +114,7 @@ All fields are optional — defaults shown. Edit `user-config.json`.
 | `minHolders` | `500` | Minimum token holder count |
 | `timeframe` | `5m` | Candle timeframe used in screening |
 | `category` | `trending` | Pool category filter for screening |
-| `takeProfitFeePct` | `5` | Close position when unclaimed fees reach this % of deployed capital |
+| `takeProfitPct` | `5` | Close position when PnL reaches this % threshold |
 | `outOfRangeWaitMinutes` | `30` | Minutes a position can be out of range before alerting / acting |
 
 ---

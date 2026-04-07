@@ -164,28 +164,40 @@ const toolMap = {
       oorCooldownHours: ["management", "oorCooldownHours"],
       minVolumeToRebalance: ["management", "minVolumeToRebalance"],
       stopLossPct: ["management", "stopLossPct"],
-      takeProfitFeePct: ["management", "takeProfitFeePct"],
+      takeProfitPct: ["management", "takeProfitPct"],
+      takeProfitFeePct: ["management", "takeProfitPct"],
       trailingTakeProfit: ["management", "trailingTakeProfit"],
       trailingTriggerPct: ["management", "trailingTriggerPct"],
       trailingDropPct: ["management", "trailingDropPct"],
+      pnlSanityMaxDiffPct: ["management", "pnlSanityMaxDiffPct"],
       solMode: ["management", "solMode"],
       minSolToOpen: ["management", "minSolToOpen"],
       deployAmountSol: ["management", "deployAmountSol"],
       gasReserve: ["management", "gasReserve"],
       positionSizePct: ["management", "positionSizePct"],
+      minAgeBeforeYieldCheck: ["management", "minAgeBeforeYieldCheck"],
       // risk
       maxPositions: ["risk", "maxPositions"],
       maxDeployAmount: ["risk", "maxDeployAmount"],
       // schedule
       managementIntervalMin: ["schedule", "managementIntervalMin"],
       screeningIntervalMin: ["schedule", "screeningIntervalMin"],
+      healthCheckIntervalMin: ["schedule", "healthCheckIntervalMin"],
       // models
       managementModel: ["llm", "managementModel"],
       screeningModel: ["llm", "screeningModel"],
       generalModel: ["llm", "generalModel"],
+      temperature: ["llm", "temperature"],
+      maxTokens: ["llm", "maxTokens"],
+      maxSteps: ["llm", "maxSteps"],
       // strategy
-      minBinStep: ["strategy", "minBinStep"],
+      strategy: ["strategy", "strategy"],
       binsBelow: ["strategy", "binsBelow"],
+      // hivemind
+      hiveMindUrl: ["hiveMind", "url"],
+      hiveMindApiKey: ["hiveMind", "apiKey"],
+      agentId: ["hiveMind", "agentId"],
+      hiveMindPullMode: ["hiveMind", "pullMode"],
     };
 
     const applied = {};
