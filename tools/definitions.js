@@ -136,7 +136,7 @@ HARD RULES:
 
 Guidelines (only when user hasn't specified):
 - Strategy: use the active strategy's lp_strategy field (bid_ask or spot)
-- Bins: choose 30–79 based on marketcap and volatility; do not exceed 79.
+- Bins: choose 30–69 based on marketcap and volatility; do not exceed 69.
 - Deposit: Can be single-sided (SOL only or Base only) or dual-sided.
 
 WARNING: This executes a real on-chain transaction. Check DRY_RUN mode.`,

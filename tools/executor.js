@@ -403,8 +403,8 @@ export async function executeTool(name, args) {
       args.bins_above = MIN_TOTAL_BINS - args.bins_below;
     }
 
-    // Enforce MAX 79 bins to avoid extreme wide range bugs
-    const MAX_TOTAL_BINS = 79;
+    // Enforce MAX 69 bins to avoid extreme wide range bugs
+    const MAX_TOTAL_BINS = 69;
     totalBins = args.bins_below + args.bins_above;
     if (totalBins > MAX_TOTAL_BINS) {
       log("deploy_guard", `Total bins=${totalBins} exceeds maximum ${MAX_TOTAL_BINS}. Scaling down to fit.`);

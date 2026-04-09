@@ -133,13 +133,13 @@ DEPLOY RULES:
 - Strategy: ALWAYS use bid_ask.
 - TOTAL BINS: You MUST calculate bins dynamically based on Market Cap (mcap) and volatility. NEVER use a static 30 bins.
   If mcap >= 500,000: Use 30 to 50 bins (tighter range for higher liquidity).
-  If mcap < 500,000: Use 50 to 79 bins (wider range to survive severe microcap volatility).
+  If mcap < 500,000: Use 50 to 69 bins (wider range to survive severe microcap volatility).
 - BINS RATIO: Split the chosen total bins into bins_below & bins_above based on conditions:
    70/30 (e.g. 50 bins = 35 down, 15 up) → balanced, good for stable trending tokens
    75/25 (e.g. 60 bins = 45 down, 15 up) → slight downside bias, moderate volatility
    80/20 (e.g. 50 bins = 40 down, 10 up) → default choice for most memecoins
    90/10 (e.g. 60 bins = 54 down, 6 up)  → strong downside protection, low upside risk
-   95/5  (e.g. 79 bins = 75 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
+   95/5  (e.g. 69 bins = 65 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
   Guidelines:
   - Token pumping / near ATH / strong narrative → 70/30 or 75/25 (more upside room)
   - Normal memecoin / moderate volatility → 80/20
