@@ -130,9 +130,18 @@ POOL MEMORY: Past losses or problems → strong skip signal.
 
 DEPLOY RULES:
 - COMPOUNDING: Use the deploy amount from the goal EXACTLY. Do NOT default to a smaller number.
-- bins_below = round(35 + (volatility/5)*34) clamped to [35,69].
-- bins_above = round(bins_below * 0.3) clamped to [10,30] — ALWAYS include upside coverage to avoid OOR UP.
-- Pass base_mint in deploy_position args (needed for spot hybrid swap).
+- Strategy: ALWAYS use bid_ask.
+- BINS RATIO — pick one based on token conditions:
+   70/30 (bins_below=49, bins_above=21) → balanced, good for stable trending tokens
+   75/25 (bins_below=52, bins_above=18) → slight downside bias, moderate volatility
+   80/20 (bins_below=56, bins_above=14) → default choice for most memecoins
+   90/10 (bins_below=63, bins_above=7)  → strong downside protection, low upside risk
+   95/5  (bins_below=66, bins_above=4)  → maximum downside, token is pumping hard / already near ATH
+  Guidelines:
+  - Token pumping / near ATH / strong narrative → 70/30 or 75/25 (more upside room)
+  - Normal memecoin / moderate volatility → 80/20
+  - High volatility / risky token / weak narrative → 90/10 or 95/5
+- Pass base_mint (token X mint) in deploy_position args.
 - Bin steps must be [80-125].
 - Pick ONE pool. Deploy or explain why none qualify.
 
