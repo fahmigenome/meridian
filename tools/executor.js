@@ -311,28 +311,27 @@ export async function executeTool(name, args) {
 
   // ─── Dual Side: pre-deploy swap SOL → base token ──────────
   if (name === "deploy_position" && config.dualSide?.enabled) {
-    let baseMint = args.base_mint;
     const deployAmount = args.amount_y ?? args.amount_sol ?? 0;
 
-    // Validate and fix baseMint if agent hallucinated a name instead of a mint address
-    if (!baseMint || baseMint.length < 32 || baseMint === args.pool_address || !/^[1-9A-HJ-NP-Za-km-z]+$/.test(baseMint)) {
-      log("dual_side", `Invalid base_mint '${baseMint}' provided. Resolving via Meteora API...`);
-      try {
-        const res = await fetch(`https://dlmm.datapi.meteora.ag/pools/${args.pool_address}`);
-        if (res.ok) {
-          const data = await res.json();
-          baseMint = data.mint_x;
-          args.base_mint = baseMint;
-        } else {
-          throw new Error("Pool API returned " + res.status);
-        }
-      } catch (e) {
-        throw new Error(`Failed to resolve baseMint for swap: ${e.message}`);
+    // Always resolve baseMint from the pool — never trust agent-supplied base_mint
+    let baseMint = null;
+    try {
+      log("dual_side", `Resolving base token mint from pool ${args.pool_address?.slice(0, 8)}...`);
+      const res = await fetch(`https://dlmm.datapi.meteora.ag/pools/${args.pool_address}`);
+      if (res.ok) {
+        const poolData = await res.json();
+        baseMint = poolData.token_x?.address;
+        args.base_mint = baseMint;
+        log("dual_side", `Resolved base_mint: ${baseMint}`);
+      } else {
+        throw new Error("Meteora Pool API returned " + res.status);
       }
+    } catch (e) {
+      throw new Error(`Failed to resolve baseMint for dual-side swap: ${e.message}`);
     }
 
     if (baseMint && deployAmount > 0 && !args.amount_x) {
-      const splitPct = config.dualSide.splitPct ?? 10;
+      const splitPct = config.dualSide.splitPct ?? 5;
       const swapAmount = Math.round((deployAmount * splitPct / 100) * 1e6) / 1e6;
       const remainingSol = Math.round((deployAmount - swapAmount) * 1e6) / 1e6;
 
@@ -345,9 +344,20 @@ export async function executeTool(name, args) {
           log("dual_side", `Pre-deploy swap: ${swapAmount} SOL → ${baseMint.slice(0, 8)} (${splitPct}% of ${deployAmount} SOL)`);
           const swapResult = await swapToken({ input_mint: "SOL", output_mint: baseMint, amount: swapAmount });
           if (swapResult?.success && swapResult.amount_out) {
-            args.amount_x = parseFloat(swapResult.amount_out);
+            // Jupiter returns outputAmountResult in atomic units (lamports).
+            // We need to convert to human-readable amount by fetching token decimals.
+            const rawOut = swapResult.amount_out;
+            let tokenDecimals = 6; // most SPL tokens use 6
+            try {
+              const { Connection, PublicKey } = await import("@solana/web3.js");
+              const conn = new Connection(process.env.RPC_URL, "confirmed");
+              const mintInfo = await conn.getParsedAccountInfo(new PublicKey(baseMint));
+              tokenDecimals = mintInfo.value?.data?.parsed?.info?.decimals ?? 6;
+            } catch (_) { /* fallback to 6 */ }
+            const humanAmount = parseFloat(rawOut) / Math.pow(10, tokenDecimals);
+            args.amount_x = humanAmount;
             args.amount_y = remainingSol;
-            log("dual_side", `Got ${args.amount_x} base tokens, deploying ${args.amount_y} SOL + ${args.amount_x} X`);
+            log("dual_side", `Got ${humanAmount} base tokens (raw: ${rawOut}, decimals: ${tokenDecimals}), deploying ${remainingSol} SOL + ${humanAmount} X`);
           } else {
             throw new Error(`Pre-deploy swap failed: ${swapResult?.error || "unknown"}. Aborting deploy to prevent single-sided position.`);
           }
