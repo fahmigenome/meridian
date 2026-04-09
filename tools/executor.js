@@ -372,7 +372,7 @@ export async function executeTool(name, args) {
   if (name === "deploy_position") {
     const MIN_BINS_BELOW = 20;
     const MIN_BINS_ABOVE = 4;
-    const MIN_TOTAL_BINS = 30;
+    const MIN_TOTAL_BINS = 39;
     const DEFAULT_BELOW = 56;  // 80/20 ratio default
     const DEFAULT_ABOVE = 14;
 
@@ -396,7 +396,6 @@ export async function executeTool(name, args) {
       args.bins_above = DEFAULT_ABOVE;
     }
     let totalBins = args.bins_below + args.bins_above;
-    const MIN_TOTAL_BINS = 39;
     if (totalBins < MIN_TOTAL_BINS) {
       log("deploy_guard", `Total bins=${totalBins} too small (min ${MIN_TOTAL_BINS}), scaling up.`);
       const ratioBelow = args.bins_below / totalBins || 0.8;
