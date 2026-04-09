@@ -30,7 +30,8 @@ import { execSync, spawn } from "child_process";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const USER_CONFIG_PATH = path.join(__dirname, "../user-config.json");
 import { log, logAction } from "../logger.js";
-import { notifyDeploy, notifyClose, notifySwap } from "../telegram.js";
+import { notifyDeploy, notifyClose, notifySwap, notifyPostMortem } from "../telegram.js";
+import { generatePostMortem, buildPostMortemData } from "../post-mortem.js";
 
 // Registered by index.js so update_config can restart cron jobs when intervals change
 let _cronRestarter = null;
@@ -324,7 +325,72 @@ export async function executeTool(name, args) {
       } else if (name === "deploy_position") {
         notifyDeploy({ pair: result.pool_name || args.pool_name || args.pool_address?.slice(0, 8), amountSol: args.amount_y ?? args.amount_sol ?? 0, position: result.position, tx: result.txs?.[0] ?? result.tx, priceRange: result.price_range, rangeCoverage: result.range_coverage, binStep: result.bin_step, baseFee: result.base_fee }).catch(() => {});
       } else if (name === "close_position") {
-        notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+        // ── Post-Mortem Scoring ─────────────────────────────────────
+        // Generate full post-mortem report with scoring, then send to Telegram
+        try {
+          const { getTrackedPosition } = await import("../state.js");
+          const tracked = getTrackedPosition(args.position_address);
+          const deployedAt = tracked?.deployed_at ? new Date(tracked.deployed_at).getTime() : Date.now();
+          const minutesHeld = Math.floor((Date.now() - deployedAt) / 60000);
+          const minutesOOR = tracked?.out_of_range_since
+            ? Math.floor((Date.now() - new Date(tracked.out_of_range_since).getTime()) / 60000)
+            : 0;
+
+          const pmData = buildPostMortemData(args.position_address, result, {
+            pool: result.pool,
+            pool_name: result.pool_name || args.position_address?.slice(0, 8),
+            pnl_usd: result.pnl_usd ?? 0,
+            pnl_pct: result.pnl_pct ?? 0,
+            fees_earned_usd: tracked?.total_fees_claimed_usd ?? 0,
+            initial_value_usd: tracked?.initial_value_usd ?? 0,
+            final_value_usd: 0,
+            minutes_held: minutesHeld,
+            minutes_in_range: Math.max(0, minutesHeld - minutesOOR),
+            close_reason: args.reason || "agent decision",
+            strategy: tracked?.strategy,
+            volatility: tracked?.volatility ?? 0,
+            fee_tvl_ratio: tracked?.fee_tvl_ratio ?? 0,
+            organic_score: tracked?.organic_score ?? 0,
+            bin_range: tracked?.bin_range,
+            bin_step: tracked?.bin_step ?? 0,
+            amount_sol: tracked?.amount_sol ?? 0,
+          });
+
+          if (pmData) {
+            const postMortem = generatePostMortem(pmData);
+            if (postMortem) {
+              // Send rich post-mortem to Telegram (replaces old notifyClose)
+              notifyPostMortem(postMortem).catch(() => {});
+
+              // Auto-save post-mortem lessons
+              for (const lesson of (postMortem.lessons || [])) {
+                const role = lesson.tags?.includes("screening") ? "SCREENER"
+                  : lesson.tags?.includes("management") ? "MANAGER"
+                  : null;
+                addLesson(lesson.text, lesson.tags || ["post_mortem"], {
+                  pinned: lesson.type === "CRITICAL",
+                  role,
+                });
+              }
+              // Attach post-mortem to result so LLM sees it
+              result.post_mortem = {
+                grade: postMortem.grade,
+                score: postMortem.overallScore,
+                lessons_saved: postMortem.lessons?.length ?? 0,
+              };
+            } else {
+              // Fallback to simple notification if post-mortem fails
+              notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+            }
+          } else {
+            notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+          }
+        } catch (pmError) {
+          log("post_mortem_error", `Post-mortem generation failed: ${pmError.message}`);
+          // Fallback to simple notification
+          notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+        }
+
         // Note low-yield closes in pool memory so screener avoids redeploying
         if (args.reason && args.reason.toLowerCase().includes("yield")) {
           const poolAddr = result.pool || args.pool_address;
