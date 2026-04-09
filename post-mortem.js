@@ -448,15 +448,37 @@ function formatReport(data, scores, overall, grade, emoji, lessons) {
     ? `${Math.floor(minutesHeld / 60)}h ${minutesHeld % 60}m`
     : `${minutesHeld}m`;
 
+  // Close reason display
+  const closeReason = data.close_reason || "agent decision";
+  const closeIcon = closeReason.includes("trailing") || closeReason.includes("take profit") ? "🎯"
+    : closeReason.includes("stop loss") ? "🛑"
+    : closeReason.includes("oor") || closeReason.includes("out of range") ? "📉"
+    : closeReason.includes("low yield") ? "💤"
+    : "🤖";
+
+  // Bin range display
+  const binInfo = data.bin_range
+    ? typeof data.bin_range === "object"
+      ? `${data.bin_range.bins_below ?? "?"}↓ / ${data.bin_range.bins_above ?? "?"}↑ (${(data.bin_range.max ?? 0) - (data.bin_range.min ?? 0)} total)`
+      : String(data.bin_range)
+    : null;
+
+  // Peak PnL
+  const peakPnl = data.peak_pnl_pct ?? 0;
+  const peakStr = peakPnl > 0 ? `📈 Peak: +${peakPnl.toFixed(2)}%` : "";
+
   const lines = [
     `📊 POST-MORTEM: ${data.pool_name || "unknown"}`,
     ``,
-    `📈 PnL: ${sign}$${(data.pnl_usd ?? 0).toFixed(2)} (${pnlSign}${(data.pnl_pct ?? 0).toFixed(2)}%)`,
+    `${closeIcon} Close reason: ${closeReason}`,
+    `📈 PnL: ${sign}$${(data.pnl_usd ?? 0).toFixed(2)} (${pnlSign}${(data.pnl_pct ?? 0).toFixed(2)}%)${peakStr ? ` | ${peakStr}` : ""}`,
     `⏱️ Duration: ${durationStr} | 💰 Fees: $${feesUsd}`,
     `🎯 Range: ${rangeEff}% in-range | 📐 Strategy: ${data.strategy || "?"}`,
+    data.amount_sol ? `💰 Deployed: ${data.amount_sol} SOL` : null,
+    binInfo ? `🔲 Bins: ${binInfo}` : null,
     ``,
     `━━━ SCORING ━━━`,
-  ];
+  ].filter(Boolean);
 
   // Score bars
   for (const [key, dim] of Object.entries(DIMENSIONS)) {
