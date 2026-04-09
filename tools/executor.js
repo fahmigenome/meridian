@@ -198,6 +198,12 @@ const toolMap = {
       // strategy
       strategy: ["strategy", "strategy"],
       binsBelow: ["strategy", "binsBelow"],
+      binsAbove: ["strategy", "binsAbove"],
+      // spotHybrid
+      spotHybridEnabled:   ["spotHybrid", "enabled"],
+      spotHybridSplitPct:  ["spotHybrid", "splitPct"],
+      spotHybridStrategy:  ["spotHybrid", "defaultStrategy"],
+      spotHybridSymmetric: ["spotHybrid", "symmetricRange"],
       // hivemind
       hiveMindUrl: ["hiveMind", "url"],
       hiveMindApiKey: ["hiveMind", "apiKey"],
@@ -303,6 +309,58 @@ export async function executeTool(name, args) {
         reason: safetyCheck.reason,
       };
     }
+  }
+
+  // ─── Spot Hybrid: pre-deploy swap SOL → base token ──────────
+  if (name === "deploy_position" && config.spotHybrid?.enabled) {
+    const baseMint = args.base_mint;
+    const deployAmount = args.amount_y ?? args.amount_sol ?? 0;
+
+    if (baseMint && deployAmount > 0 && !args.amount_x) {
+      const splitPct = config.spotHybrid.splitPct ?? 50;
+      const swapAmount = Math.round((deployAmount * splitPct / 100) * 1e6) / 1e6;
+      const remainingSol = Math.round((deployAmount - swapAmount) * 1e6) / 1e6;
+
+      if (process.env.DRY_RUN === "true") {
+        log("spot_hybrid", `DRY RUN: Would swap ${swapAmount} SOL → ${baseMint.slice(0, 8)} for dual-side deploy`);
+        args.amount_x = swapAmount; // approximate — in dry run we just mirror
+        args.amount_y = remainingSol;
+      } else {
+        try {
+          log("spot_hybrid", `Pre-deploy swap: ${swapAmount} SOL → ${baseMint.slice(0, 8)} (${splitPct}% of ${deployAmount} SOL)`);
+          const swapResult = await swapToken({ input_mint: "SOL", output_mint: baseMint, amount: swapAmount });
+          if (swapResult?.success && swapResult.amount_out) {
+            args.amount_x = parseFloat(swapResult.amount_out);
+            args.amount_y = remainingSol;
+            log("spot_hybrid", `Got ${args.amount_x} base tokens, deploying ${args.amount_y} SOL + ${args.amount_x} X`);
+          } else {
+            log("spot_hybrid_warn", `Pre-deploy swap failed: ${swapResult?.error || "unknown"} — falling back to single-side SOL`);
+          }
+        } catch (e) {
+          log("spot_hybrid_warn", `Pre-deploy swap error: ${e.message} — falling back to single-side SOL`);
+        }
+      }
+
+      // Override strategy to spot for dual-side
+      if (args.amount_x && args.amount_x > 0) {
+        const origStrategy = args.strategy;
+        args.strategy = config.spotHybrid.defaultStrategy || "spot";
+        log("spot_hybrid", `Strategy override: ${origStrategy || "default"} → ${args.strategy}`);
+      }
+
+      // Symmetric range: bins_above = bins_below
+      if (config.spotHybrid.symmetricRange && args.amount_x && args.amount_x > 0) {
+        const binsBelow = args.bins_below ?? config.strategy.binsBelow ?? 69;
+        args.bins_above = binsBelow;
+        log("spot_hybrid", `Symmetric range: bins_below=${binsBelow}, bins_above=${args.bins_above}`);
+      }
+    }
+  }
+
+  // ─── Default bins_above: always add upside coverage ──────────
+  if (name === "deploy_position" && (args.bins_above == null || args.bins_above === 0)) {
+    args.bins_above = config.strategy.binsAbove ?? 15;
+    log("deploy", `Applied default bins_above=${args.bins_above} for upside coverage`);
   }
 
   // ─── Execute ──────────────────────────────

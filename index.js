@@ -562,6 +562,8 @@ STEPS:
 1. Pick the best candidate based on narrative quality, smart wallets, and pool metrics.
 2. Call deploy_position (active_bin is pre-fetched above — no need to call get_active_bin).
    bins_below = round(35 + (volatility/5)*55) clamped to [35,90].
+   bins_above = round(bins_below * 0.3) clamped to [10,30] — ALWAYS include upside bins to avoid OOR UP.
+   IMPORTANT: Always pass base_mint (the token X mint address) in deploy_position args.${config.spotHybrid?.enabled ? `\n   SPOT HYBRID: enabled — executor will auto-swap ${config.spotHybrid.splitPct}% SOL to base token for dual-side deploy.` : ""}
 3. Report in this exact format (no tables, no extra sections):
    🚀 DEPLOYED
 

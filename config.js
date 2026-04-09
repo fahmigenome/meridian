@@ -86,6 +86,15 @@ export const config = {
   strategy: {
     strategy:  u.strategy  ?? "bid_ask",
     binsBelow: u.binsBelow ?? 69,
+    binsAbove: u.binsAbove ?? 15,  // upside coverage bins (previously 0 = instant OOR UP)
+  },
+
+  // ─── Spot Hybrid (dual-side deploy) ─────
+  spotHybrid: {
+    enabled:         u.spotHybridEnabled   ?? false,  // pre-swap SOL → base token before deploy
+    splitPct:        u.spotHybridSplitPct   ?? 50,     // % of deploy amount swapped to base token
+    defaultStrategy: u.spotHybridStrategy   ?? "spot", // strategy when hybrid is active
+    symmetricRange:  u.spotHybridSymmetric  ?? true,   // bins_above = bins_below for balanced range
   },
 
   // ─── Scheduling ─────────────────────────
