@@ -357,10 +357,39 @@ export async function executeTool(name, args) {
     }
   }
 
-  // ─── Default bins_above: always add upside coverage ──────────
-  if (name === "deploy_position" && (args.bins_above == null || args.bins_above === 0)) {
-    args.bins_above = config.strategy.binsAbove ?? 15;
-    log("deploy", `Applied default bins_above=${args.bins_above} for upside coverage`);
+  // ─── Bins Guard: prevent tiny ranges ──────────────────────────
+  if (name === "deploy_position") {
+    const MIN_BINS_BELOW = 20;
+    const MIN_BINS_ABOVE = 4;
+    const MIN_TOTAL_BINS = 30;
+    const DEFAULT_BELOW = 56;  // 80/20 ratio default
+    const DEFAULT_ABOVE = 14;
+
+    // Apply defaults if missing
+    if (args.bins_above == null || args.bins_above === 0) {
+      args.bins_above = config.strategy.binsAbove ?? DEFAULT_ABOVE;
+      log("deploy", `Applied default bins_above=${args.bins_above}`);
+    }
+    if (args.bins_below == null || args.bins_below === 0) {
+      args.bins_below = config.strategy.binsBelow ?? DEFAULT_BELOW;
+      log("deploy", `Applied default bins_below=${args.bins_below}`);
+    }
+
+    // Enforce minimums
+    if (args.bins_below < MIN_BINS_BELOW) {
+      log("deploy_guard", `bins_below=${args.bins_below} too small (min ${MIN_BINS_BELOW}), clamping to ${DEFAULT_BELOW}`);
+      args.bins_below = DEFAULT_BELOW;
+    }
+    if (args.bins_above < MIN_BINS_ABOVE) {
+      log("deploy_guard", `bins_above=${args.bins_above} too small (min ${MIN_BINS_ABOVE}), clamping to ${DEFAULT_ABOVE}`);
+      args.bins_above = DEFAULT_ABOVE;
+    }
+    const totalBins = args.bins_below + args.bins_above;
+    if (totalBins < MIN_TOTAL_BINS) {
+      log("deploy_guard", `Total bins=${totalBins} too small (min ${MIN_TOTAL_BINS}), applying 80/20 defaults`);
+      args.bins_below = DEFAULT_BELOW;
+      args.bins_above = DEFAULT_ABOVE;
+    }
   }
 
   // ─── Execute ──────────────────────────────
