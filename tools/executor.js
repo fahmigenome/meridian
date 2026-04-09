@@ -332,10 +332,10 @@ export async function executeTool(name, args) {
             args.amount_y = remainingSol;
             log("dual_side", `Got ${args.amount_x} base tokens, deploying ${args.amount_y} SOL + ${args.amount_x} X`);
           } else {
-            log("dual_side_warn", `Pre-deploy swap failed: ${swapResult?.error || "unknown"} — falling back to single-side SOL`);
+            throw new Error(`Pre-deploy swap failed: ${swapResult?.error || "unknown"}. Aborting deploy to prevent single-sided position.`);
           }
         } catch (e) {
-          log("dual_side_warn", `Pre-deploy swap error: ${e.message} — falling back to single-side SOL`);
+          throw new Error(`Pre-deploy swap error: ${e.message}. Aborting deploy to prevent single-sided position.`);
         }
       }
     }
