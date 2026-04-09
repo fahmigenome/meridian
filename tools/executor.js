@@ -437,6 +437,8 @@ export async function executeTool(name, args) {
           amountSol: result.amount_y ?? args.amount_y ?? args.amount_sol ?? 0,
           amountX: result.amount_x ?? args.amount_x ?? 0,
           totalBins: result.bin_range ? (result.bin_range.max - result.bin_range.min) : (args.bins_below ?? 0) + (args.bins_above ?? 0),
+          binsBelow: args.bins_below ?? 0,
+          binsAbove: args.bins_above ?? 0,
           strategy: result.strategy ?? args.strategy ?? "bid_ask",
           position: result.position,
           tx: result.txs?.[0] ?? result.tx,

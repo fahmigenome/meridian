@@ -335,7 +335,7 @@ export function stopPolling() {
 }
 
 // ─── Notification helpers ────────────────────────────────────────
-export async function notifyDeploy({ pair, amountSol, amountX, totalBins, strategy, position, tx, priceRange, rangeCoverage, binStep, baseFee }) {
+export async function notifyDeploy({ pair, amountSol, amountX, totalBins, binsBelow, binsAbove, strategy, position, tx, priceRange, rangeCoverage, binStep, baseFee }) {
   if (hasActiveLiveMessage()) return;
 
   // Dual-side split display
@@ -356,8 +356,11 @@ export async function notifyDeploy({ pair, amountSol, amountX, totalBins, strate
   const coverageStr = rangeCoverage
     ? `📐 Coverage: ${fmtPct(rangeCoverage.downside_pct)} ↓ | ${fmtPct(rangeCoverage.upside_pct)} ↑ | ${fmtPct(rangeCoverage.width_pct)} total\n`
     : "";
+  const binsDetail = (binsBelow || binsAbove)
+    ? `${binsBelow}↓ / ${binsAbove}↑`
+    : "";
   const binsStr = totalBins
-    ? `🔲 Bins: ${totalBins} | Strategy: ${strategy || "bid_ask"}\n`
+    ? `🔲 Bins: ${totalBins}${binsDetail ? ` (${binsDetail})` : ""} | Strategy: ${strategy || "bid_ask"}\n`
     : "";
   const poolStr = (binStep || baseFee)
     ? `⚙️ Bin step: ${binStep ?? "?"}  |  Base fee: ${baseFee != null ? baseFee + "%" : "?"}\n`
