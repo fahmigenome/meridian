@@ -92,7 +92,7 @@ export const config = {
   // ─── Dual Side (Pre-Deploy Swap) ────────
   dualSide: {
     enabled:         u.dualSideEnabled   ?? true,  // pre-swap SOL → base token before deploy
-    splitPct:        u.dualSideSplitPct  ?? 10,    // % of deploy amount swapped to base token (e.g. 10%)
+    splitPct:        u.dualSideSplitPct  ?? 5,     // % of deploy amount swapped to base token (e.g. 5%)
   },
 
   // ─── Scheduling ─────────────────────────
