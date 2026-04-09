@@ -311,8 +311,25 @@ export async function executeTool(name, args) {
 
   // ─── Dual Side: pre-deploy swap SOL → base token ──────────
   if (name === "deploy_position" && config.dualSide?.enabled) {
-    const baseMint = args.base_mint;
+    let baseMint = args.base_mint;
     const deployAmount = args.amount_y ?? args.amount_sol ?? 0;
+
+    // Validate and fix baseMint if agent hallucinated a name instead of a mint address
+    if (!baseMint || baseMint.length < 32 || baseMint === args.pool_address || !/^[1-9A-HJ-NP-Za-km-z]+$/.test(baseMint)) {
+      log("dual_side", `Invalid base_mint '${baseMint}' provided. Resolving via Meteora API...`);
+      try {
+        const res = await fetch(`https://dlmm.datapi.meteora.ag/pools/${args.pool_address}`);
+        if (res.ok) {
+          const data = await res.json();
+          baseMint = data.mint_x;
+          args.base_mint = baseMint;
+        } else {
+          throw new Error("Pool API returned " + res.status);
+        }
+      } catch (e) {
+        throw new Error(`Failed to resolve baseMint for swap: ${e.message}`);
+      }
+    }
 
     if (baseMint && deployAmount > 0 && !args.amount_x) {
       const splitPct = config.dualSide.splitPct ?? 10;
