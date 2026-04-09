@@ -166,19 +166,11 @@ WARNING: This executes a real on-chain transaction. Check DRY_RUN mode.`,
           },
           bins_below: {
             type: "number",
-            description: "Number of bins below active bin. Use this for explicit bin-based deploys. If downside_pct is provided, that percentage-based range takes priority and bins are derived automatically via the SDK."
+            description: "Number of bins below active bin. Calculate based on the BINS RATIO rule."
           },
           bins_above: {
             type: "number",
-            description: "Number of bins above active bin. MUST be 0 for bid_ask strategy unless the user explicitly wants upside exposure. If upside_pct is provided, that percentage-based range takes priority and bins are derived automatically via the SDK."
-          },
-          downside_pct: {
-            type: "number",
-            description: "Optional human-friendly downside range in percent below the current active price. Example: 50 means target roughly -50% downside coverage. Converted to bins internally via the Meteora SDK."
-          },
-          upside_pct: {
-            type: "number",
-            description: "Optional human-friendly upside range in percent above the current active price. Example: 10 means target roughly +10% upside coverage. Converted to bins internally via the Meteora SDK."
+            description: "Number of bins above active bin. Calculate based on the BINS RATIO rule."
           },
           pool_name: { type: "string", description: "Human-readable pool name for record-keeping" },
           base_mint: { type: "string", description: "Base token mint address — used to prevent duplicate token exposure across pools" },

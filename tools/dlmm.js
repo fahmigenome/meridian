@@ -143,8 +143,6 @@ export async function deployPosition({
   strategy,
   bins_below,
   bins_above,
-  downside_pct,
-  upside_pct,
   // optional pool metadata for learning (passed by agent when available)
   pool_name,
   bin_step,
@@ -175,25 +173,7 @@ export async function deployPosition({
   const actualBinStep = pool.lbPair.binStep;
   const activePrice = Number(getPriceOfBinByBinId(activeBin.binId, actualBinStep).toString());
 
-  if (downside_pct != null || upside_pct != null) {
-    const downsidePct = Math.max(0, Number(downside_pct ?? 0));
-    const upsidePct = Math.max(0, Number(upside_pct ?? 0));
-
-    if (!Number.isFinite(downsidePct) || !Number.isFinite(upsidePct)) {
-      throw new Error("downside_pct and upside_pct must be valid numbers.");
-    }
-    if (downsidePct >= 100) {
-      throw new Error("downside_pct must be less than 100.");
-    }
-
-    const lowerTargetPrice = activePrice * (1 - downsidePct / 100);
-    const upperTargetPrice = activePrice * (1 + upsidePct / 100);
-    const lowerBinId = getBinIdFromPrice(lowerTargetPrice, actualBinStep, true);
-    const upperBinId = getBinIdFromPrice(upperTargetPrice, actualBinStep, false);
-
-    activeBinsBelow = Math.max(0, activeBin.binId - lowerBinId);
-    activeBinsAbove = Math.max(0, upperBinId - activeBin.binId);
-  }
+  // Bins are now provided directly via bins_below and bins_above.
 
   if (process.env.DRY_RUN === "true") {
     const totalBins = activeBinsBelow + activeBinsAbove;
