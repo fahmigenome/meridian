@@ -259,6 +259,13 @@ export async function runManagementCycle({ silent = false } = {}) {
       const unclaimed = config.management.solMode ? `◎${p.unclaimed_fees_usd ?? "?"}` : `$${p.unclaimed_fees_usd ?? "?"}`;
       const statusLabel = act.action === "INSTRUCTION" ? "HOLD (instruction)" : act.action;
       let line = `**${p.pair}** | Age: ${p.age_minutes ?? "?"}m | Val: ${val} | Unclaimed: ${unclaimed} | PnL: ${p.pnl_pct ?? "?"}% | Yield: ${p.fee_per_tvl_24h ?? "?"}% | ${inRange} | ${statusLabel}`;
+      // Range info line
+      if (p.lower_bin != null && p.upper_bin != null) {
+        const totalBins = p.upper_bin - p.lower_bin;
+        const activeBinStr = p.active_bin != null ? `Active: ${p.active_bin}` : "";
+        const posInRange = p.active_bin != null ? (p.active_bin >= p.lower_bin && p.active_bin <= p.upper_bin ? "✅" : "❌") : "";
+        line += `\n📊 Bins: ${p.lower_bin} → ${p.upper_bin} (${totalBins} bins) | ${activeBinStr} ${posInRange}`;
+      }
       if (p.instruction) line += `\nNote: "${p.instruction}"`;
       if (act.action === "CLOSE" && act.rule === "exit") line += `\n⚡ Trailing TP: ${act.reason}`;
       if (act.action === "CLOSE" && act.rule && act.rule !== "exit") line += `\nRule ${act.rule}: ${act.reason}`;
