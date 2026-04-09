@@ -259,12 +259,29 @@ export async function runManagementCycle({ silent = false } = {}) {
       const unclaimed = config.management.solMode ? `◎${p.unclaimed_fees_usd ?? "?"}` : `$${p.unclaimed_fees_usd ?? "?"}`;
       const statusLabel = act.action === "INSTRUCTION" ? "HOLD (instruction)" : act.action;
       let line = `**${p.pair}** | Age: ${p.age_minutes ?? "?"}m | Val: ${val} | Unclaimed: ${unclaimed} | PnL: ${p.pnl_pct ?? "?"}% | Yield: ${p.fee_per_tvl_24h ?? "?"}% | ${inRange} | ${statusLabel}`;
-      // Range info line
+      // Visual range bar
       if (p.lower_bin != null && p.upper_bin != null) {
         const totalBins = p.upper_bin - p.lower_bin;
-        const activeBinStr = p.active_bin != null ? `Active: ${p.active_bin}` : "";
-        const posInRange = p.active_bin != null ? (p.active_bin >= p.lower_bin && p.active_bin <= p.upper_bin ? "✅" : "❌") : "";
-        line += `\n📊 Bins: ${p.lower_bin} → ${p.upper_bin} (${totalBins} bins) | ${activeBinStr} ${posInRange}`;
+        const BAR_WIDTH = 20;
+        let bar;
+        if (p.active_bin != null) {
+          if (p.active_bin < p.lower_bin) {
+            // OOR left (price dropped below range)
+            bar = `◀│${"░".repeat(BAR_WIDTH)}│`;
+          } else if (p.active_bin > p.upper_bin) {
+            // OOR right (price above range)
+            bar = `│${"░".repeat(BAR_WIDTH)}│▶`;
+          } else {
+            // In range — show position
+            const pos = Math.round(((p.active_bin - p.lower_bin) / totalBins) * BAR_WIDTH);
+            const left = Math.max(0, pos);
+            const right = Math.max(0, BAR_WIDTH - pos - 1);
+            bar = `│${"█".repeat(left)}▌${"█".repeat(right)}│`;
+          }
+        } else {
+          bar = `│${"█".repeat(BAR_WIDTH)}│`;
+        }
+        line += `\n${bar} ${totalBins} bins`;
       }
       if (p.instruction) line += `\nNote: "${p.instruction}"`;
       if (act.action === "CLOSE" && act.rule === "exit") line += `\n⚡ Trailing TP: ${act.reason}`;
