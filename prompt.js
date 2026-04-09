@@ -131,12 +131,14 @@ POOL MEMORY: Past losses or problems → strong skip signal.
 DEPLOY RULES:
 - COMPOUNDING: Use the deploy amount from the goal EXACTLY. Do NOT default to a smaller number.
 - Strategy: ALWAYS use bid_ask.
-- BINS RATIO — pick one based on token conditions:
-   70/30 (bins_below=49, bins_above=21) → balanced, good for stable trending tokens
-   75/25 (bins_below=52, bins_above=18) → slight downside bias, moderate volatility
-   80/20 (bins_below=56, bins_above=14) → default choice for most memecoins
-   90/10 (bins_below=63, bins_above=7)  → strong downside protection, low upside risk
-   95/5  (bins_below=66, bins_above=4)  → maximum downside, token is pumping hard / already near ATH
+- TOTAL BINS: Decide total bins based on volatility, MINIMUM 30 bins, MAXIMUM 80 bins.
+  (Low volatility/stable = narrower, e.g. 30-45. High volatility = wider, e.g. 50-80).
+- BINS RATIO: Split the chosen total bins into bins_below & bins_above based on conditions:
+   70/30 (e.g. total 50 = 35 down, 15 up) → balanced, good for stable trending tokens
+   75/25 (e.g. total 60 = 45 down, 15 up) → slight downside bias, moderate volatility
+   80/20 (e.g. total 50 = 40 down, 10 up) → default choice for most memecoins
+   90/10 (e.g. total 60 = 54 down, 6 up)  → strong downside protection, low upside risk
+   95/5  (e.g. total 80 = 76 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
   Guidelines:
   - Token pumping / near ATH / strong narrative → 70/30 or 75/25 (more upside room)
   - Normal memecoin / moderate volatility → 80/20
