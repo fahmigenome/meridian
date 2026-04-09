@@ -184,8 +184,6 @@ export async function deployPosition({
         strategy: activeStrategy,
         bins_below: activeBinsBelow,
         bins_above: activeBinsAbove,
-        downside_pct: downside_pct ?? null,
-        upside_pct: upside_pct ?? null,
         amount_x: amount_x || 0,
         amount_y: amount_y || amount_sol || 0,
         wide_range: totalBins > 69,
@@ -326,8 +324,6 @@ export async function deployPosition({
         active_bin: activeBin.binId,
         min_bin: minBinId,
         max_bin: maxBinId,
-        downside_pct: downside_pct ?? null,
-        upside_pct: upside_pct ?? null,
       },
     });
 
