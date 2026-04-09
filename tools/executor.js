@@ -368,11 +368,21 @@ export async function executeTool(name, args) {
       log("deploy_guard", `bins_above=${args.bins_above} too small (min ${MIN_BINS_ABOVE}), clamping to ${DEFAULT_ABOVE}`);
       args.bins_above = DEFAULT_ABOVE;
     }
-    const totalBins = args.bins_below + args.bins_above;
+    let totalBins = args.bins_below + args.bins_above;
     if (totalBins < MIN_TOTAL_BINS) {
       log("deploy_guard", `Total bins=${totalBins} too small (min ${MIN_TOTAL_BINS}), applying 80/20 defaults`);
       args.bins_below = DEFAULT_BELOW;
       args.bins_above = DEFAULT_ABOVE;
+    }
+
+    // Enforce MAX 69 bins to avoid WIDE RANGE bug in SDK
+    const MAX_TOTAL_BINS = 69;
+    totalBins = args.bins_below + args.bins_above;
+    if (totalBins > MAX_TOTAL_BINS) {
+      log("deploy_guard", `Total bins=${totalBins} exceeds maximum ${MAX_TOTAL_BINS}. Scaling down to fit.`);
+      const ratioBelow = args.bins_below / totalBins;
+      args.bins_below = Math.floor(MAX_TOTAL_BINS * ratioBelow);
+      args.bins_above = MAX_TOTAL_BINS - args.bins_below;
     }
   }
 

@@ -561,7 +561,7 @@ ${candidateBlocks.join("\n\n")}
 STEPS:
 1. Pick the best candidate based on narrative quality, smart wallets, and pool metrics.
 2. Call deploy_position with strategy=bid_ask (active_bin is pre-fetched — no need to call get_active_bin).
-   TOTAL BINS: 30 to 80 (use narrower range for low volatility, wider for high volatility).
+   TOTAL BINS: 30 to 69 (use narrower range for low volatility, wider for high volatility).
    BINS RATIO — split chosen total bins:
    70/30 → stable trending | 75/25 → moderate vol | 80/20 → DEFAULT | 90/10 → high vol | 95/5 → pumping/ATH
    (e.g. if total=50 and ratio=80/20, use bins_below=40, bins_above=10).
