@@ -370,11 +370,11 @@ export async function executeTool(name, args) {
 
   // ─── Bins Guard: prevent tiny ranges ──────────────────────────
   if (name === "deploy_position") {
-    const MIN_BINS_BELOW = 20;
-    const MIN_BINS_ABOVE = 4;
-    const MIN_TOTAL_BINS = 39;
-    const DEFAULT_BELOW = 56;  // 80/20 ratio default
-    const DEFAULT_ABOVE = 14;
+    const MIN_BINS_BELOW = 30;
+    const MIN_BINS_ABOVE = 5;
+    const MIN_TOTAL_BINS = 50;
+    const DEFAULT_BELOW = 52;  // ~80/20 ratio of 65 total
+    const DEFAULT_ABOVE = 13;
 
     // Apply defaults if missing
     if (args.bins_above == null || args.bins_above === 0) {
@@ -403,8 +403,8 @@ export async function executeTool(name, args) {
       args.bins_above = MIN_TOTAL_BINS - args.bins_below;
     }
 
-    // Enforce MAX 69 bins to avoid extreme wide range bugs
-    const MAX_TOTAL_BINS = 69;
+    // Enforce MAX 80 bins to avoid extreme wide range bugs
+    const MAX_TOTAL_BINS = 80;
     totalBins = args.bins_below + args.bins_above;
     if (totalBins > MAX_TOTAL_BINS) {
       log("deploy_guard", `Total bins=${totalBins} exceeds maximum ${MAX_TOTAL_BINS}. Scaling down to fit.`);

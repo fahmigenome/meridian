@@ -131,15 +131,18 @@ POOL MEMORY: Past losses or problems → strong skip signal.
 DEPLOY RULES:
 - COMPOUNDING: Use the deploy amount from the goal EXACTLY. Do NOT default to a smaller number.
 - Strategy: ALWAYS use bid_ask.
-- TOTAL BINS: You MUST calculate bins dynamically based on Market Cap (mcap) and volatility. NEVER use a static 30 bins.
-  If mcap >= 500,000: Use 30 to 50 bins (tighter range for higher liquidity).
-  If mcap < 500,000: Use 50 to 69 bins (wider range to survive severe microcap volatility).
+- TOTAL BINS: You MUST choose total bins dynamically between 50 and 80. NEVER use static bins.
+  Pick bins based on YOUR conviction level from the screening analysis and the token's volatility:
+  - HIGH conviction + low volatility → 50-60 bins (tighter range, more concentrated fees)
+  - MEDIUM conviction + moderate volatility → 60-70 bins (balanced range)
+  - LOW conviction + high volatility → 70-80 bins (wider range to survive volatility)
+  Use your best judgment. Do NOT filter by market cap for bin count.
 - BINS RATIO: Split the chosen total bins into bins_below & bins_above based on conditions:
-   70/30 (e.g. 50 bins = 35 down, 15 up) → balanced, good for stable trending tokens
+   70/30 (e.g. 60 bins = 42 down, 18 up) → balanced, good for stable trending tokens
    75/25 (e.g. 60 bins = 45 down, 15 up) → slight downside bias, moderate volatility
-   80/20 (e.g. 50 bins = 40 down, 10 up) → default choice for most memecoins
-   90/10 (e.g. 60 bins = 54 down, 6 up)  → strong downside protection, low upside risk
-   95/5  (e.g. 69 bins = 65 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
+   80/20 (e.g. 60 bins = 48 down, 12 up) → default choice for most memecoins
+   90/10 (e.g. 70 bins = 63 down, 7 up)  → strong downside protection, low upside risk
+   95/5  (e.g. 80 bins = 76 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
   Guidelines:
   - Token pumping / near ATH / strong narrative → 70/30 or 75/25 (more upside room)
   - Normal memecoin / moderate volatility → 80/20

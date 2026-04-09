@@ -85,7 +85,7 @@ export const config = {
   // ─── Strategy Mapping ───────────────────
   strategy: {
     strategy:  u.strategy  ?? "bid_ask",
-    binsBelow: u.binsBelow ?? 69,
+    binsBelow: u.binsBelow ?? 65,
     binsAbove: u.binsAbove ?? 15,  // upside coverage bins (previously 0 = instant OOR UP)
   },
 

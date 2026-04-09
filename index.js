@@ -585,10 +585,10 @@ ${candidateBlocks.join("\n\n")}
 STEPS:
 1. Pick the best candidate based on narrative quality, smart wallets, and pool metrics.
 2. Call deploy_position with strategy=bid_ask (active_bin is pre-fetched — no need to call get_active_bin).
-   TOTAL BINS: Dynamic sizing based on mcap. If mcap >= 500k -> 30-50 bins. If mcap < 500k -> 50-69 bins.
+   TOTAL BINS: Dynamic sizing 50-80 bins based on conviction and volatility (NOT mcap). Agent decides.
    BINS RATIO — split chosen total bins:
    70/30 → stable trending | 75/25 → moderate vol | 80/20 → DEFAULT | 90/10 → high vol | 95/5 → pumping/ATH
-   (e.g. if total=50 and ratio=80/20, use bins_below=40, bins_above=10).
+   (e.g. if total=65 and ratio=80/20, use bins_below=52, bins_above=13).
    IMPORTANT: Always pass base_mint (token X mint) in deploy_position args.${config.dualSide?.enabled ? `\n   DUAL SIDE: enabled — executor will auto-buy ${config.dualSide.splitPct}% base token before deploy.` : ""}
 3. Report in this exact format (no tables, no extra sections):
    🚀 DEPLOYED
@@ -978,13 +978,14 @@ async function deployLatestCandidate(index) {
     throw new Error("Invalid candidate index. Run /screen first.");
   }
   const deployAmount = computeDeployAmount((await getWalletBalances()).sol);
-  const binsBelow = Math.max(35, Math.min(90, Math.round(35 + ((Number(candidate.volatility) || 0) / 5) * 55)));
+  const binsBelow = Math.max(40, Math.min(76, Math.round(50 + ((Number(candidate.volatility) || 0) / 5) * 26)));
+  const binsAbove = Math.max(5, Math.round(binsBelow * 0.25));  // ~80/20 ratio
   const result = await executeTool("deploy_position", {
     pool_address: candidate.pool,
     amount_y: deployAmount,
     strategy: config.strategy.strategy,
     bins_below: binsBelow,
-    bins_above: 0,
+    bins_above: binsAbove,
     pool_name: candidate.name,
     base_mint: candidate.base?.mint || candidate.base_mint || null,
     bin_step: candidate.bin_step,
