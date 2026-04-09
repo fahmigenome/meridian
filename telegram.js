@@ -335,25 +335,42 @@ export function stopPolling() {
 }
 
 // ─── Notification helpers ────────────────────────────────────────
-export async function notifyDeploy({ pair, amountSol, position, tx, priceRange, rangeCoverage, binStep, baseFee }) {
+export async function notifyDeploy({ pair, amountSol, amountX, totalBins, strategy, position, tx, priceRange, rangeCoverage, binStep, baseFee }) {
   if (hasActiveLiveMessage()) return;
+
+  // Dual-side split display
+  let splitLine;
+  if (amountX > 0) {
+    // Calculate SOL% from the original total (before split)
+    const origTotal = (amountSol || 0) / 0.95; // 5% was swapped
+    const solPct = Math.round(((amountSol || 0) / origTotal) * 100);
+    const tokenPct = 100 - solPct;
+    splitLine = `💰 ${amountSol} SOL + ${typeof amountX === 'number' ? amountX.toFixed(2) : amountX} Token (${solPct}% SOL / ${tokenPct}% Token)\n`;
+  } else {
+    splitLine = `💰 ${amountSol} SOL (single-side)\n`;
+  }
+
   const priceStr = priceRange
-    ? `Price range: ${priceRange.min < 0.0001 ? priceRange.min.toExponential(3) : priceRange.min.toFixed(6)} – ${priceRange.max < 0.0001 ? priceRange.max.toExponential(3) : priceRange.max.toFixed(6)}\n`
+    ? `📊 Range: ${priceRange.min < 0.0001 ? priceRange.min.toExponential(3) : priceRange.min.toFixed(6)} – ${priceRange.max < 0.0001 ? priceRange.max.toExponential(3) : priceRange.max.toFixed(6)}\n`
     : "";
   const coverageStr = rangeCoverage
-    ? `Range cover: ${fmtPct(rangeCoverage.downside_pct)} downside | ${fmtPct(rangeCoverage.upside_pct)} upside | ${fmtPct(rangeCoverage.width_pct)} total\n`
+    ? `📐 Coverage: ${fmtPct(rangeCoverage.downside_pct)} ↓ | ${fmtPct(rangeCoverage.upside_pct)} ↑ | ${fmtPct(rangeCoverage.width_pct)} total\n`
+    : "";
+  const binsStr = totalBins
+    ? `🔲 Bins: ${totalBins} | Strategy: ${strategy || "bid_ask"}\n`
     : "";
   const poolStr = (binStep || baseFee)
-    ? `Bin step: ${binStep ?? "?"}  |  Base fee: ${baseFee != null ? baseFee + "%" : "?"}\n`
+    ? `⚙️ Bin step: ${binStep ?? "?"}  |  Base fee: ${baseFee != null ? baseFee + "%" : "?"}\n`
     : "";
   await sendHTML(
     `✅ <b>Deployed</b> ${pair}\n` +
-    `Amount: ${amountSol} SOL\n` +
+    splitLine +
+    binsStr +
     priceStr +
     coverageStr +
     poolStr +
-    `Position: <code>${position?.slice(0, 8)}...</code>\n` +
-    `Tx: <code>${tx?.slice(0, 16)}...</code>`
+    `📍 Position: <code>${position?.slice(0, 8)}...</code>\n` +
+    `🔗 Tx: <code>${tx?.slice(0, 16)}...</code>`
   );
 }
 
