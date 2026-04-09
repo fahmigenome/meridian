@@ -597,6 +597,8 @@ STEPS:
    <pool address>
 
    ◎ <deploy amount> SOL | <strategy> | bin <active_bin>
+   🔲 Bins: <total bins> (<bins_below>↓ / <bins_above>↑)
+   🧠 <bins_conviction — your reason for choosing this bin count>
    Range: <minPrice> → <maxPrice>
    Range cover: <downside %> downside | <upside %> upside | <total width %> total
 
