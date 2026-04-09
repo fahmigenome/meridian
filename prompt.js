@@ -148,6 +148,7 @@ DEPLOY RULES:
   - Normal memecoin / moderate volatility → 80/20
   - High volatility / risky token / weak narrative → 90/10 or 95/5
 - Pass base_mint (token X mint) in deploy_position args.
+- Pass bins_conviction: a SHORT reason for your bin choice, e.g. "HIGH conviction + low vol → 55 bins tight" or "MED conviction + high vol → 72 bins wide". Always include conviction level (HIGH/MEDIUM/LOW) and the key factor.
 - Bin steps must be [80-125].
 - Pick ONE pool. Deploy or explain why none qualify.
 

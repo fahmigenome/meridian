@@ -589,7 +589,7 @@ STEPS:
    BINS RATIO — split chosen total bins:
    70/30 → stable trending | 75/25 → moderate vol | 80/20 → DEFAULT | 90/10 → high vol | 95/5 → pumping/ATH
    (e.g. if total=65 and ratio=80/20, use bins_below=52, bins_above=13).
-   IMPORTANT: Always pass base_mint (token X mint) in deploy_position args.${config.dualSide?.enabled ? `\n   DUAL SIDE: enabled — executor will auto-buy ${config.dualSide.splitPct}% base token before deploy.` : ""}
+   IMPORTANT: Always pass base_mint (token X mint) and bins_conviction (short reason for bin choice with conviction level) in deploy_position args.${config.dualSide?.enabled ? `\n   DUAL SIDE: enabled — executor will auto-buy ${config.dualSide.splitPct}% base token before deploy.` : ""}
 3. Report in this exact format (no tables, no extra sections):
    🚀 DEPLOYED
 

@@ -136,7 +136,7 @@ HARD RULES:
 
 Guidelines (only when user hasn't specified):
 - Strategy: use the active strategy's lp_strategy field (bid_ask or spot)
-- Bins: choose 30–69 based on marketcap and volatility; do not exceed 69.
+- Bins: choose 50–80 based on conviction and volatility.
 - Deposit: Can be single-sided (SOL only or Base only) or dual-sided.
 
 WARNING: This executes a real on-chain transaction. Check DRY_RUN mode.`,
@@ -179,7 +179,8 @@ WARNING: This executes a real on-chain transaction. Check DRY_RUN mode.`,
           volatility: { type: "number", description: "Pool volatility at deploy time" },
           fee_tvl_ratio: { type: "number", description: "fee/TVL ratio at deploy time" },
           organic_score: { type: "number", description: "Base token organic score at deploy time" },
-          initial_value_usd: { type: "number", description: "Estimated USD value being deployed" }
+          initial_value_usd: { type: "number", description: "Estimated USD value being deployed" },
+          bins_conviction: { type: "string", description: "Brief reason for chosen bin count, e.g. 'HIGH conviction + low vol → 55 bins tight range' or 'MEDIUM conviction + high vol → 75 bins wide protection'" }
         },
         required: ["pool_address"]
       }
