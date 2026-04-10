@@ -217,14 +217,18 @@ export async function deployPosition({
   strategy,
   bins_below,
   bins_above,
+  downside_pct,
+  upside_pct,
   // optional pool metadata for learning (passed by agent when available)
   pool_name,
+  base_mint: _baseMint,  // accepted but resolved from pool on-chain
   bin_step,
   base_fee,
   volatility,
   fee_tvl_ratio,
   organic_score,
   initial_value_usd,
+  bins_conviction,
 }) {
   pool_address = normalizeMint(pool_address);
   const activeStrategy = strategy || config.strategy.strategy;
