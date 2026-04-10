@@ -131,24 +131,9 @@ POOL MEMORY: Past losses or problems → strong skip signal.
 DEPLOY RULES:
 - COMPOUNDING: Use the deploy amount from the goal EXACTLY. Do NOT default to a smaller number.
 - Strategy: ALWAYS use bid_ask.
-- TOTAL BINS: You MUST choose total bins dynamically between 50 and 80. NEVER use static bins.
-  Pick bins based on YOUR conviction level from the screening analysis and the token's volatility:
-  - HIGH conviction + low volatility → 50-60 bins (tighter range, more concentrated fees)
-  - MEDIUM conviction + moderate volatility → 60-70 bins (balanced range)
-  - LOW conviction + high volatility → 70-80 bins (wider range to survive volatility)
-  Use your best judgment. Do NOT filter by market cap for bin count.
-- BINS RATIO: Split the chosen total bins into bins_below & bins_above based on conditions:
-   70/30 (e.g. 60 bins = 42 down, 18 up) → balanced, good for stable trending tokens
-   75/25 (e.g. 60 bins = 45 down, 15 up) → slight downside bias, moderate volatility
-   80/20 (e.g. 60 bins = 48 down, 12 up) → default choice for most memecoins
-   90/10 (e.g. 70 bins = 63 down, 7 up)  → strong downside protection, low upside risk
-   95/5  (e.g. 80 bins = 76 down, 4 up)  → maximum downside, token is pumping hard / already near ATH
-  Guidelines:
-  - Token pumping / near ATH / strong narrative → 70/30 or 75/25 (more upside room)
-  - Normal memecoin / moderate volatility → 80/20
-  - High volatility / risky token / weak narrative → 90/10 or 95/5
+- bins_below = round(35 + (volatility/5)*34) clamped to [35,69]. bins_above = 0.
 - Pass base_mint (token X mint) in deploy_position args.
-- Pass bins_conviction: a SHORT reason for your bin choice, e.g. "HIGH conviction + low vol → 55 bins tight" or "MED conviction + high vol → 72 bins wide". Always include conviction level (HIGH/MEDIUM/LOW) and the key factor.
+- Pass bins_conviction: a SHORT reason for your bin choice, e.g. "HIGH conviction + vol 2.5 → 52 bins" or "MED conviction + vol 4.8 → 68 bins". Always include conviction level (HIGH/MEDIUM/LOW) and the key factor.
 - Bin steps must be [80-125].
 - Pick ONE pool. Deploy or explain why none qualify.
 

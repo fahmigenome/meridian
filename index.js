@@ -622,11 +622,8 @@ ${candidateBlocks.join("\n\n")}
 
 STEPS:
 1. Pick the best candidate based on narrative quality, smart wallets, and pool metrics.
-2. Call deploy_position with strategy=bid_ask (active_bin is pre-fetched — no need to call get_active_bin).
-   TOTAL BINS: Dynamic sizing 50-80 bins based on conviction and volatility (NOT mcap). Agent decides.
-   BINS RATIO — split chosen total bins:
-   70/30 → stable trending | 75/25 → moderate vol | 80/20 → DEFAULT | 90/10 → high vol | 95/5 → pumping/ATH
-   (e.g. if total=65 and ratio=80/20, use bins_below=52, bins_above=13).
+2. Call deploy_position (active_bin is pre-fetched above — no need to call get_active_bin).
+   bins_below = round(35 + (volatility/5)*34) clamped to [35,69]. bins_above = 0.
    IMPORTANT: Always pass base_mint (token X mint) and bins_conviction (short reason for bin choice with conviction level) in deploy_position args.${config.dualSide?.enabled ? `\n   DUAL SIDE: enabled — executor will auto-buy ${config.dualSide.splitPct}% base token before deploy.` : ""}
 3. Report in this exact format (no tables, no extra sections):
    🚀 DEPLOYED
@@ -635,7 +632,7 @@ STEPS:
    <pool address>
 
    ◎ <deploy amount> SOL | <strategy> | bin <active_bin>
-   🔲 Bins: <total bins> (<bins_below>↓ / <bins_above>↑)
+   🔲 Bins: <bins_below>↓ / <bins_above>↑
    🧠 <bins_conviction — your reason for choosing this bin count>
    Range: <minPrice> → <maxPrice>
    Range cover: <downside %> downside | <upside %> upside | <total width %> total

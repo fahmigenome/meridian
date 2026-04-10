@@ -372,52 +372,6 @@ export async function executeTool(name, args) {
     }
   }
 
-  // ─── Bins Guard: prevent tiny ranges ──────────────────────────
-  if (name === "deploy_position") {
-    const MIN_BINS_BELOW = 30;
-    const MIN_BINS_ABOVE = 5;
-    const MIN_TOTAL_BINS = 50;
-    const DEFAULT_BELOW = 52;  // ~80/20 ratio of 65 total
-    const DEFAULT_ABOVE = 13;
-
-    // Apply defaults if missing
-    if (args.bins_above == null || args.bins_above === 0) {
-      args.bins_above = config.strategy.binsAbove ?? DEFAULT_ABOVE;
-      log("deploy", `Applied default bins_above=${args.bins_above}`);
-    }
-    if (args.bins_below == null || args.bins_below === 0) {
-      args.bins_below = config.strategy.binsBelow ?? DEFAULT_BELOW;
-      log("deploy", `Applied default bins_below=${args.bins_below}`);
-    }
-
-    // Enforce minimums
-    if (args.bins_below < MIN_BINS_BELOW) {
-      log("deploy_guard", `bins_below=${args.bins_below} too small (min ${MIN_BINS_BELOW}), clamping to ${DEFAULT_BELOW}`);
-      args.bins_below = DEFAULT_BELOW;
-    }
-    if (args.bins_above < MIN_BINS_ABOVE) {
-      log("deploy_guard", `bins_above=${args.bins_above} too small (min ${MIN_BINS_ABOVE}), clamping to ${DEFAULT_ABOVE}`);
-      args.bins_above = DEFAULT_ABOVE;
-    }
-    let totalBins = args.bins_below + args.bins_above;
-    if (totalBins < MIN_TOTAL_BINS) {
-      log("deploy_guard", `Total bins=${totalBins} too small (min ${MIN_TOTAL_BINS}), scaling up.`);
-      const ratioBelow = args.bins_below / totalBins || 0.8;
-      args.bins_below = Math.ceil(MIN_TOTAL_BINS * ratioBelow);
-      args.bins_above = MIN_TOTAL_BINS - args.bins_below;
-    }
-
-    // Enforce MAX 80 bins to avoid extreme wide range bugs
-    const MAX_TOTAL_BINS = 80;
-    totalBins = args.bins_below + args.bins_above;
-    if (totalBins > MAX_TOTAL_BINS) {
-      log("deploy_guard", `Total bins=${totalBins} exceeds maximum ${MAX_TOTAL_BINS}. Scaling down to fit.`);
-      const ratioBelow = args.bins_below / totalBins;
-      args.bins_below = Math.floor(MAX_TOTAL_BINS * ratioBelow);
-      args.bins_above = MAX_TOTAL_BINS - args.bins_below;
-    }
-  }
-
   // ─── Execute ──────────────────────────────
   try {
     const result = await fn(args);
