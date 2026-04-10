@@ -83,6 +83,20 @@
   "darwinMinSamples": 10,
 
   "agentId": "",
+  "publicApiKey": "",
+  "agentMeridianApiUrl": "https://api.agentmeridian.xyz/api",
+  "lpAgentRelayEnabled": false,
+  "chartIndicators": {
+    "enabled": false,
+    "entryPreset": "supertrend_break",
+    "exitPreset": "supertrend_break",
+    "rsiLength": 2,
+    "intervals": ["5_MINUTE", "15_MINUTE"],
+    "candles": 298,
+    "rsiOversold": 30,
+    "rsiOverbought": 80,
+    "requireAllIntervals": false
+  },
   "telegramChatId": "",
   "hiveMindUrl": "",
   "hiveMindApiKey": "",

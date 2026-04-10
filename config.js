@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const USER_CONFIG_PATH = path.join(__dirname, "user-config.json");
 const DEFAULT_HIVEMIND_URL = "https://api.agentmeridian.xyz";
+const DEFAULT_AGENT_MERIDIAN_API_URL = "https://api.agentmeridian.xyz/api";
 
 const u = fs.existsSync(USER_CONFIG_PATH)
   ? JSON.parse(fs.readFileSync(USER_CONFIG_PATH, "utf8"))
@@ -17,6 +18,10 @@ if (u.llmModel)  process.env.LLM_MODEL          ||= u.llmModel;
 if (u.llmBaseUrl) process.env.LLM_BASE_URL      ||= u.llmBaseUrl;
 if (u.llmApiKey)  process.env.LLM_API_KEY       ||= u.llmApiKey;
 if (u.dryRun !== undefined) process.env.DRY_RUN ||= String(u.dryRun);
+if (u.publicApiKey) process.env.PUBLIC_API_KEY ||= u.publicApiKey;
+if (u.agentMeridianApiUrl) process.env.AGENT_MERIDIAN_API_URL ||= u.agentMeridianApiUrl;
+
+const indicatorUserConfig = u.chartIndicators ?? {};
 
 export const config = {
   // ─── Risk Limits ─────────────────────────
@@ -137,6 +142,26 @@ export const config = {
     apiKey: u.hiveMindApiKey ?? "",
     agentId: u.agentId ?? null,
     pullMode: u.hiveMindPullMode ?? "auto",
+  },
+
+  api: {
+    url: u.agentMeridianApiUrl ?? process.env.AGENT_MERIDIAN_API_URL ?? DEFAULT_AGENT_MERIDIAN_API_URL,
+    publicApiKey: u.publicApiKey ?? process.env.PUBLIC_API_KEY ?? "",
+    lpAgentRelayEnabled: u.lpAgentRelayEnabled ?? false,
+  },
+
+  indicators: {
+    enabled: indicatorUserConfig.enabled ?? false,
+    entryPreset: indicatorUserConfig.entryPreset ?? "supertrend_break",
+    exitPreset: indicatorUserConfig.exitPreset ?? "supertrend_break",
+    rsiLength: indicatorUserConfig.rsiLength ?? 2,
+    intervals: Array.isArray(indicatorUserConfig.intervals)
+      ? indicatorUserConfig.intervals
+      : ["5_MINUTE", "15_MINUTE"],
+    candles: indicatorUserConfig.candles ?? 298,
+    rsiOversold: indicatorUserConfig.rsiOversold ?? 30,
+    rsiOverbought: indicatorUserConfig.rsiOverbought ?? 80,
+    requireAllIntervals: indicatorUserConfig.requireAllIntervals ?? false,
   },
 };
 

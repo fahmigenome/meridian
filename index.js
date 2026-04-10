@@ -20,6 +20,7 @@ import { stageSignals } from "./signal-tracker.js";
 import { getWeightsSummary } from "./signal-weights.js";
 import { bootstrapHiveMind, ensureAgentId, getHiveMindPullMode, isHiveMindEnabled, pullHiveMindLessons, pullHiveMindPresets, registerHiveMindAgent, startHiveMindBackgroundSync } from "./hivemind.js";
 import { appendDecision } from "./decision-log.js";
+import { confirmIndicatorPreset } from "./tools/chart-indicators.js";
 
 log("startup", "DLMM LP Agent starting...");
 log("startup", `Mode: ${process.env.DRY_RUN === "true" ? "DRY RUN" : "LIVE"}`);
@@ -88,6 +89,26 @@ function sanitizeUntrustedPromptText(text, maxLen = 500) {
     .trim()
     .slice(0, maxLen);
   return cleaned ? JSON.stringify(cleaned) : null;
+}
+
+async function confirmExitIndicator(position, closeReason) {
+  if (!config.indicators.enabled) {
+    return { confirmed: true, skipped: true, reason: "Indicators disabled" };
+  }
+  if (!position?.base_mint) {
+    return { confirmed: true, skipped: true, reason: "Missing base mint for indicator lookup" };
+  }
+  const confirmation = await confirmIndicatorPreset({
+    mint: position.base_mint,
+    side: "exit",
+  });
+  if (!confirmation.confirmed) {
+    log(
+      "indicators",
+      `Exit confirmation rejected for ${position.pair} (${closeReason}): ${confirmation.reason}`,
+    );
+  }
+  return confirmation;
 }
 
 function schedulePeakConfirmation(positionAddress) {
@@ -226,6 +247,14 @@ export async function runManagementCycle({ silent = false } = {}) {
     for (const p of positionData) {
       // Hard exit — highest priority
       if (exitMap.has(p.position)) {
+        const indicatorConfirmation = await confirmExitIndicator(p, exitMap.get(p.position));
+        if (!indicatorConfirmation.confirmed) {
+          actionMap.set(p.position, {
+            action: "STAY",
+            indicatorHold: indicatorConfirmation.reason,
+          });
+          continue;
+        }
         actionMap.set(p.position, { action: "CLOSE", rule: "exit", reason: exitMap.get(p.position) });
         continue;
       }
@@ -237,6 +266,14 @@ export async function runManagementCycle({ silent = false } = {}) {
 
       const closeRule = getDeterministicCloseRule(p, config.management);
       if (closeRule) {
+        const indicatorConfirmation = await confirmExitIndicator(p, closeRule.reason);
+        if (!indicatorConfirmation.confirmed) {
+          actionMap.set(p.position, {
+            action: "STAY",
+            indicatorHold: indicatorConfirmation.reason,
+          });
+          continue;
+        }
         actionMap.set(p.position, closeRule);
         continue;
       }
@@ -286,6 +323,7 @@ export async function runManagementCycle({ silent = false } = {}) {
       if (p.instruction) line += `\nNote: "${p.instruction}"`;
       if (act.action === "CLOSE" && act.rule === "exit") line += `\n⚡ Trailing TP: ${act.reason}`;
       if (act.action === "CLOSE" && act.rule && act.rule !== "exit") line += `\nRule ${act.rule}: ${act.reason}`;
+      if (act.indicatorHold) line += `\nIndicator hold: ${act.indicatorHold}`;
       if (act.action === "CLAIM") line += `\n→ Claiming fees`;
       return line;
     });
@@ -727,6 +765,11 @@ Summarize the current portfolio health, total fees earned, and performance of al
         }
         const exit = updatePnlAndCheckExits(p.position, p, config.management);
         if (exit) {
+          const indicatorConfirmation = await confirmExitIndicator(p, exit.reason);
+          if (!indicatorConfirmation.confirmed) {
+            log("state", `[PnL poll] Exit alert suppressed by indicators: ${p.pair} — ${indicatorConfirmation.reason}`);
+            continue;
+          }
           if (exit.action === "TRAILING_TP" && exit.needs_confirmation) {
             if (queueTrailingDropConfirmation(p.position, exit.peak_pnl_pct, exit.current_pnl_pct, config.management.trailingDropPct)) {
               scheduleTrailingDropConfirmation(p.position);
@@ -746,6 +789,11 @@ Summarize the current portfolio health, total fees earned, and performance of al
         }
         const closeRule = getDeterministicCloseRule(p, config.management);
         if (closeRule) {
+          const indicatorConfirmation = await confirmExitIndicator(p, closeRule.reason);
+          if (!indicatorConfirmation.confirmed) {
+            log("state", `[PnL poll] Deterministic close suppressed by indicators: ${p.pair} — ${indicatorConfirmation.reason}`);
+            continue;
+          }
           const cooldownMs = config.schedule.managementIntervalMin * 60 * 1000;
           const sinceLastTrigger = Date.now() - _pollTriggeredAt;
           if (sinceLastTrigger >= cooldownMs) {

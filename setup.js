@@ -340,6 +340,9 @@ const FIELD_SECTIONS = [
     title: "Integrations",
     fields: [
       { key: "agentId", label: "Agent ID (leave blank to auto-generate on startup)", type: "string" },
+      { key: "publicApiKey", label: "Agent Meridian public API key", type: "string", preserveExistingMasked: true },
+      { key: "agentMeridianApiUrl", label: "Agent Meridian API base URL", type: "string" },
+      { key: "lpAgentRelayEnabled", label: "Route LPAgent close execution + open positions through Agent Meridian? (true/false)", type: "boolean" },
       { key: "telegramChatId", label: "Telegram chat ID", type: "string" },
       { key: "hiveMindApiKey", label: "HiveMind API key", type: "string", preserveExistingMasked: true },
       { key: "hiveMindPullMode", label: "HiveMind pull mode", type: "choice", choices: [
