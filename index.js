@@ -624,7 +624,7 @@ STEPS:
 1. Pick the best candidate based on narrative quality, smart wallets, and pool metrics.
 2. Call deploy_position (active_bin is pre-fetched above — no need to call get_active_bin).
    bins_below = round(35 + (volatility/5)*34) clamped to [35,69]. bins_above = 0.
-   IMPORTANT: Always pass base_mint (token X mint) and bins_conviction (short reason for bin choice with conviction level) in deploy_position args.${config.dualSide?.enabled ? `\n   DUAL SIDE: enabled — executor will auto-buy ${config.dualSide.splitPct}% base token before deploy.` : ""}
+   IMPORTANT: Always pass base_mint (token X mint) and bins_conviction (short reason for bin choice with conviction level) in deploy_position args.
 3. Report in this exact format (no tables, no extra sections):
    🚀 DEPLOYED
 
