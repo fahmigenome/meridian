@@ -294,11 +294,28 @@ export async function executeTool(name, args) {
   name = name.replace(/<.*$/, "").trim();
 
   // ─── Validate tool exists ─────────────────
-  const fn = toolMap[name];
+  let fn = toolMap[name];
   if (!fn) {
-    const error = `Unknown tool: ${name}`;
-    log("error", error);
-    return { error };
+    // Fuzzy match: try to find a close match for hallucinated tool names
+    // e.g. "close_specific_position" → "close_position", "get_positions" → "get_my_positions"
+    const TOOL_ALIASES = {
+      close_specific_position: "close_position",
+      close_all_positions: "close_position",
+      remove_position: "close_position",
+      get_positions: "get_my_positions",
+      get_balance: "get_wallet_balance",
+      check_balance: "get_wallet_balance",
+    };
+    const alias = TOOL_ALIASES[name];
+    if (alias && toolMap[alias]) {
+      log("executor", `Fuzzy-matched tool "${name}" → "${alias}"`);
+      name = alias;
+      fn = toolMap[name];
+    } else {
+      const error = `Unknown tool: ${name}`;
+      log("error", error);
+      return { error };
+    }
   }
 
   // ─── Pre-execution safety checks ──────────

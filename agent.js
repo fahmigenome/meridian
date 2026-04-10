@@ -49,8 +49,8 @@ const INTENT_TOOLS = {
 
 const INTENT_PATTERNS = [
   { intent: "decisions",   re: /\b(why did you|why'd you|why was (?:this|that|it)|what made you|what was the reason|why no deploy|why didn't you deploy|why did you close|why did you deploy|why did you skip)\b/i },
-  { intent: "deploy",      re: /\b(deploy|open|add liquidity|lp into|invest in)\b/i },
-  { intent: "close",       re: /\b(close|exit|withdraw|remove liquidity|shut down)\b/i },
+  { intent: "deploy",      re: /\b(deploy|open|add liquidity|lp into|invest in|buka posisi|masuk)\b/i },
+  { intent: "close",       re: /\b(close|exit|withdraw|remove liquidity|shut down|tutup|jual|lepas|tahan|pump terlalu|keluar)\b/i },
   { intent: "claim",       re: /\b(claim|harvest|collect)\b.*\bfee/i },
   { intent: "swap",        re: /\b(swap|convert|sell|exchange)\b/i },
   { intent: "selfupdate",  re: /\b(self.?update|git pull|pull latest|update (the )?bot|update (the )?agent|update yourself)\b/i },
