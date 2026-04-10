@@ -858,7 +858,7 @@ export async function getMyPositions({ force = false, silent = false } = {}) {
           position:           positionAddress,
           pool:               pool.poolAddress,
           pair:               tracked?.pool_name || `${pool.tokenX}/${pool.tokenY}`,
-          base_mint:          pool.tokenXMint,
+          base_mint:          pool.tokenXMint === "So11111111111111111111111111111111111111112" && pool.tokenYMint ? pool.tokenYMint : pool.tokenXMint,
           lower_bin:          lowerBin,
           upper_bin:          upperBin,
           active_bin:         activeBin,
@@ -1070,7 +1070,7 @@ export async function claimFees({ position_address }) {
     _positionsCacheAt = 0; // invalidate cache after claim
     recordClaim(position_address);
 
-    return { success: true, position: position_address, txs: txHashes, base_mint: pool.lbPair.tokenXMint.toString() };
+    return { success: true, position: position_address, txs: txHashes, base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString() };
   } catch (error) {
     log("claim_error", error.message);
     return { success: false, error: error.message };
@@ -1538,7 +1538,7 @@ export async function closePosition({ position_address, reason }) {
         txs: txHashes,
         pnl_usd: pnlUsd,
         pnl_pct: pnlPct,
-        base_mint: pool.lbPair.tokenXMint.toString(),
+        base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString(),
       };
     }
 
@@ -1561,7 +1561,7 @@ export async function closePosition({ position_address, reason }) {
       claim_txs: claimTxHashes,
       close_txs: closeTxHashes,
       txs: txHashes,
-      base_mint: pool.lbPair.tokenXMint.toString(),
+      base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString(),
     };
   } catch (error) {
     log("close_error", error.message);

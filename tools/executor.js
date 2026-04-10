@@ -461,16 +461,20 @@ export async function executeTool(name, args) {
                 lessons_saved: postMortem.lessons?.length ?? 0,
               };
             } else {
-              // Fallback to simple notification if post-mortem fails
-              notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+              // Fallback to simple notification if post-mortem fails, using sendMessage directly to bypass live message lock
+              const { sendMessage } = await import("../telegram.js");
+              sendMessage(`📊 POST-MORTEM (Simple): ${result.pool_name || args.position_address?.slice(0, 8)}\n📉 PnL: $${(result.pnl_usd ?? 0).toFixed(2)} (${(result.pnl_pct ?? 0).toFixed(2)}%)\n\n(Full grading failed to generate)`).catch(() => {});
             }
           } else {
             notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
           }
         } catch (pmError) {
           log("post_mortem_error", `Post-mortem generation failed: ${pmError.message}`);
-          // Fallback to simple notification
-          notifyClose({ pair: result.pool_name || args.position_address?.slice(0, 8), pnlUsd: result.pnl_usd ?? 0, pnlPct: result.pnl_pct ?? 0 }).catch(() => {});
+          // Fallback to simple notification via sendMessage to bypass live message lock
+          try {
+            const { sendMessage } = await import("../telegram.js");
+            sendMessage(`📊 POST-MORTEM (Simple): ${result.pool_name || args.position_address?.slice(0, 8)}\n📉 PnL: $${(result.pnl_usd ?? 0).toFixed(2)} (${(result.pnl_pct ?? 0).toFixed(2)}%)\n\n(Full grading failed: ${pmError.message})`).catch(() => {});
+          } catch(e) {}
         }
 
         // Note low-yield closes in pool memory so screener avoids redeploying
