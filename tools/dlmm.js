@@ -882,7 +882,7 @@ export async function getMyPositions({ force = false, silent = false } = {}) {
           position:           positionAddress,
           pool:               pool.poolAddress,
           pair:               tracked?.pool_name || `${pool.tokenX}/${pool.tokenY}`,
-          base_mint:          pool.tokenXMint,
+          base_mint:          pool.tokenXMint === "So11111111111111111111111111111111111111112" && pool.tokenYMint ? pool.tokenYMint : pool.tokenXMint,
           lower_bin:          lowerBin,
           upper_bin:          upperBin,
           active_bin:         activeBin,
@@ -1075,6 +1075,23 @@ export async function claimFees({ position_address }) {
     poolCache.delete(poolAddress.toString());
     const pool = await getPool(poolAddress);
 
+    // Snapshot unclaimed fees BEFORE claiming so we know how much was claimed
+    let claimedFeesUsd = 0;
+    try {
+      const cachedPos = _positionsCache?.positions?.find(p => p.position === position_address);
+      if (cachedPos?.unclaimed_fees_true_usd > 0) {
+        claimedFeesUsd = cachedPos.unclaimed_fees_true_usd;
+      } else if (cachedPos?.unclaimed_fees_usd > 0) {
+        claimedFeesUsd = cachedPos.unclaimed_fees_usd;
+      } else {
+        // Fetch from PnL API as fallback
+        const pnlData = await getPositionPnl({ position_address, pool_address: poolAddress });
+        if (pnlData?.unclaimed_fee_usd > 0) claimedFeesUsd = pnlData.unclaimed_fee_usd;
+      }
+    } catch (e) {
+      log("claim_warn", `Could not snapshot unclaimed fees before claim: ${e.message}`);
+    }
+
     const positionData = await pool.getPosition(new PublicKey(position_address));
     const txs = await pool.claimSwapFee({
       owner: wallet.publicKey,
@@ -1090,11 +1107,11 @@ export async function claimFees({ position_address }) {
       const txHash = await sendAndConfirmTransaction(getConnection(), tx, [wallet]);
       txHashes.push(txHash);
     }
-    log("claim", `SUCCESS txs: ${txHashes.join(", ")}`);
+    log("claim", `SUCCESS txs: ${txHashes.join(", ")} | claimed ~$${claimedFeesUsd.toFixed(2)}`);
     _positionsCacheAt = 0; // invalidate cache after claim
-    recordClaim(position_address);
+    recordClaim(position_address, claimedFeesUsd);
 
-    return { success: true, position: position_address, txs: txHashes, base_mint: pool.lbPair.tokenXMint.toString() };
+    return { success: true, position: position_address, txs: txHashes, claimed_fees_usd: claimedFeesUsd, base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString() };
   } catch (error) {
     log("claim_error", error.message);
     return { success: false, error: error.message };
@@ -1293,6 +1310,9 @@ export async function closePosition({ position_address, reason }) {
           txs: txHashes,
           pnl_usd: pnlUsd,
           pnl_pct: pnlPct,
+          fees_earned_usd: feesUsd,
+          initial_value_usd: initialUsd,
+          final_value_usd: finalValueUsd,
           base_mint: livePosition?.base_mint || null,
         };
       }
@@ -1562,7 +1582,10 @@ export async function closePosition({ position_address, reason }) {
         txs: txHashes,
         pnl_usd: pnlUsd,
         pnl_pct: pnlPct,
-        base_mint: pool.lbPair.tokenXMint.toString(),
+        fees_earned_usd: feesUsd,
+        initial_value_usd: initialUsd,
+        final_value_usd: finalValueUsd,
+        base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString(),
       };
     }
 
@@ -1585,7 +1608,7 @@ export async function closePosition({ position_address, reason }) {
       claim_txs: claimTxHashes,
       close_txs: closeTxHashes,
       txs: txHashes,
-      base_mint: pool.lbPair.tokenXMint.toString(),
+      base_mint: pool.lbPair.tokenXMint.toString() === "So11111111111111111111111111111111111111112" ? pool.lbPair.tokenYMint.toString() : pool.lbPair.tokenXMint.toString(),
     };
   } catch (error) {
     log("close_error", error.message);

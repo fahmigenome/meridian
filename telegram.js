@@ -383,6 +383,18 @@ export async function notifyOutOfRange({ pair, minutesOOR }) {
   );
 }
 
+/**
+ * Send a full post-mortem report to Telegram.
+ * Called from executor.js after every close_position.
+ *
+ * @param {Object} postMortem - Result from generatePostMortem()
+ */
+export async function notifyPostMortem(postMortem) {
+  if (!postMortem || !postMortem.report) return;
+  // Always send post-mortem, even during live message — it's critical info
+  await sendMessage(postMortem.report);
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
